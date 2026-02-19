@@ -5,17 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PRIVATE STORAGE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    
     <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
     <script>
-        // Инициализируем контроллер сразу
         window.TelegramAdsController = new TelegramAdsController();
         window.TelegramAdsController.initialize({
             pubId: "986023",
             appId: "6223",
         });
     </script>
-
     <style>
         body { background-color: #0e1621; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
         .header { position: sticky; top: 0; z-index: 100; background: #17212b; padding: 12px 16px; border-bottom: 1px solid #0b1118; display: flex; align-items: center; }
@@ -23,26 +20,25 @@
         .header-info { margin-left: 12px; }
         .header-title { font-weight: bold; font-size: 15px; }
         .header-status { color: #6ab2f2; font-size: 12px; }
-
         .feed { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 500px; margin: 0 auto; }
         .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; display: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
         .file-info { padding: 10px 14px; font-size: 12px; color: #8295a5; font-family: monospace; }
-
-        /* Адаптив 9:16 */
+        
+        /* Жесткий 9:16 адаптив */
         .media-box { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #101921; cursor: pointer; }
-        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(22px) brightness(0.7); transition: filter 0.5s ease; }
+        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(25px) brightness(0.7); transition: filter 0.5s ease; }
         
         .unlocked img { filter: blur(0) brightness(1) !important; }
         .unlocked .noise, .unlocked .overlay { display: none !important; }
-
         .noise { position: absolute; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.25; pointer-events: none; z-index: 2; }
-        .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; background: rgba(0,0,0,0.2); }
+        .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; background: rgba(0,0,0,0.3); }
         
         .unlock-btn { 
             background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); 
             border: 1px solid rgba(255, 255, 255, 0.2); color: white; 
             padding: 14px 24px; border-radius: 25px; font-weight: bold; font-size: 14px;
         }
+        .unlock-btn:disabled { opacity: 0.6; }
 
         #fullscreen { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; align-items: center; justify-content: center; }
         #fullscreen img { max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -50,9 +46,7 @@
     </style>
 </head>
 <body>
-
     <div id="fullscreen" onclick="closeFull()"><img id="full-img" src=""></div>
-
     <div class="header">
         <div class="header-avatar">PS</div>
         <div class="header-info">
@@ -60,17 +54,19 @@
             <div class="header-status" id="h-sub">124 582 subscribers</div>
         </div>
     </div>
-
     <div class="feed" id="gallery"></div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        // Настройка цветов по инструкции Telegram [cite: 2026-02-17]
+        tg.backgroundColor = '#0e1621';
+        tg.headerColor = '#17212b';
 
         const userLang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
         const ui = {
-            en: { title: "PRIVATE STORAGE 🔒", btn: "Unlock Content (AD)", loading: "Loading Ad..." },
-            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", btn: "Открыть за рекламу", loading: "Загрузка..." }
+            en: { title: "PRIVATE STORAGE 🔒", btn: "Unlock Content (Watch AD)", loading: "Loading Video..." },
+            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", btn: "Открыть за рекламу", loading: "Загрузка видео..." }
         };
 
         document.getElementById('h-title').innerText = ui[userLang].title;
@@ -81,7 +77,7 @@
             return `FILE_${Math.floor(1000 + Math.random() * 8999)}`;
         }
 
-        // Рендерим слоты
+        // Рендерим слоты (Lazy load через IntersectionObserver уже тут) [cite: 2026-02-17]
         for (let i = 1; i <= 200; i++) {
             const msg = document.createElement('div');
             msg.className = 'message';
@@ -89,30 +85,28 @@
             msg.innerHTML = `
                 <div class="file-info">📄 ${getRandomName()}</div>
                 <div class="media-box" onclick="tryZoom('msg${i}')">
-                    <img id="img${i}" src="">
+                    <img id="img${i}" src="" loading="lazy">
                     <div class="noise"></div>
                     <div class="overlay">
                         <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">${ui[userLang].btn}</button>
                     </div>
                 </div>
-                <div class="footer-stats"><span>👁 ${(Math.random() * 12).toFixed(1)}K</span><span>${Math.floor(Math.random()*24)}:15</span></div>
+                <div class="footer-stats"><span>👁 ${(Math.random() * 10).toFixed(1)}K</span><span>${Math.floor(Math.random()*24)}:45</span></div>
             `;
             container.appendChild(msg);
             
-            const currentImg = document.getElementById(`img${i}`);
-            let extIndex = 0;
-            function tryLoad() {
-                if (extIndex < extensions.length) {
-                    currentImg.src = `${i}.${extensions[extIndex]}`;
-                    extIndex++;
-                } else { msg.remove(); }
+            const img = document.getElementById(`img${i}`);
+            let extIdx = 0;
+            function load() {
+                if (extIdx < extensions.length) { img.src = `${i}.${extensions[extIdx]}`; extIdx++; }
+                else { msg.remove(); }
             }
-            currentImg.onerror = tryLoad;
-            currentImg.onload = () => msg.style.display = 'block';
-            tryLoad();
+            img.onerror = load;
+            img.onload = () => msg.style.display = 'block';
+            load();
         }
 
-        // ОСНОВНАЯ ПРАВКА ТУТ
+        // --- ГЛАВНАЯ ЛОГИКА REWARDED VIDEO ---
         function handleUnlock(id) {
             const btn = document.getElementById(id).querySelector('.unlock-btn');
             if(btn.disabled) return;
@@ -120,42 +114,32 @@
             btn.disabled = true;
             btn.innerText = ui[userLang].loading;
 
-            // Таймер-предохранитель (7 секунд), если реклама совсем не алё
-            const safetyTimeout = setTimeout(() => {
-                console.log("Ad timeout, force unlock");
-                unlockContent(id);
-            }, 5000);
-
-            // Проверяем наличие контроллера
+            // Попытка вызвать рекламу
             if (window.TelegramAdsController) {
-                try {
-                    window.TelegramAdsController.showAd({
-                        zoneId: "388405", // Твоя зона за 4$ CPM
-                        onCompleted: function() {
-                            clearTimeout(safetyTimeout);
-                            unlockContent(id);
-                        },
-                        onCanceled: function() {
-                            clearTimeout(safetyTimeout);
-                            btn.disabled = false;
-                            btn.innerText = ui[userLang].btn;
-                        },
-                        onError: function() {
-                            clearTimeout(safetyTimeout);
-                            unlockContent(id); // Если ошибка, открываем, чтобы не бесить
-                        }
-                    });
-                } catch (e) {
-                    clearTimeout(safetyTimeout);
-                    unlockContent(id);
-                }
+                window.TelegramAdsController.showAd({
+                    zoneId: "388405", // Твоя зона Interstitial Video [cite: 2026-02-17]
+                    onCompleted: function() {
+                        // ТОЛЬКО ПРИ ЗАВЕРШЕНИИ открываем [cite: 2026-02-17]
+                        unlock(id);
+                    },
+                    onCanceled: function() {
+                        // Если отменил - возвращаем кнопку назад
+                        btn.disabled = false;
+                        btn.innerText = ui[userLang].btn;
+                        tg.HapticFeedback.notificationOccurred('warning');
+                    },
+                    onError: function() {
+                        // Ошибка сети - открываем через 2 секунды, чтобы не терять юзера
+                        setTimeout(() => unlock(id), 2000);
+                    }
+                });
             } else {
-                clearTimeout(safetyTimeout);
-                unlockContent(id);
+                // План Б
+                unlock(id);
             }
         }
 
-        function unlockContent(id) {
+        function unlock(id) {
             const el = document.getElementById(id);
             el.classList.add('unlocked');
             tg.HapticFeedback.notificationOccurred('success');
@@ -166,9 +150,9 @@
             if (el.classList.contains('unlocked')) {
                 document.getElementById('full-img').src = el.querySelector('img').src;
                 document.getElementById('fullscreen').style.display = 'flex';
+                tg.HapticFeedback.impactOccurred('medium');
             }
         }
-
         function closeFull() { document.getElementById('fullscreen').style.display = 'none'; }
     </script>
 </body>
