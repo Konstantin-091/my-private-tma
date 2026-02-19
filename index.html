@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Private Gallery</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: -apple-system, sans-serif; margin: 0; overflow-x: hidden; }
+        .feed { display: flex; flex-direction: column; gap: 2px; }
+        
+        /* Контейнер 9:16 */
+        .card { 
+            position: relative; width: 100%; aspect-ratio: 9/16; 
+            background: #111; overflow: hidden;
+        }
+
+        /* Эффект матового стекла и шума как в ТГ */
+        .card img { 
+            width: 100%; height: 100%; object-fit: cover; 
+            filter: blur(50px) brightness(0.5); transition: 0.8s ease;
+        }
+
+        .card.unlocked img { filter: blur(0) brightness(1); }
+
+        /* Нативный шум Telegram */
+        .noise {
+            position: absolute; inset: 0;
+            background: url('https://grainy-gradients.vercel.app/noise.svg');
+            opacity: 0.4; pointer-events: none; z-index: 2;
+        }
+
+        .overlay {
+            position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3;
+        }
+
+        .unlocked .overlay, .unlocked .noise { display: none; }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.15); backdrop-filter: blur(15px);
+            color: #fff; border: 1px solid rgba(255,255,255,0.2);
+            padding: 18px 30px; border-radius: 50px; font-weight: bold; font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div class="feed" id="gallery"></div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+
+        const lang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
+        const ui = { ru: { btn: "Разблокировать" }, en: { btn: "Unlock Content" } };
+
+        const container = document.getElementById('gallery');
+        
+        // УКАЖИ ЗДЕСЬ СКОЛЬКО У ТЕБЯ КАРТИНОК
+        const totalImages = 100; 
+
+        for (let i = 1; i <= totalImages; i++) {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.id = 'p' + i;
+            card.innerHTML = `
+                <img data-src="${i}.jpg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                <div class="noise"></div>
+                <div class="overlay">
+                    <button class="btn" onclick="unlock('p${i}')">${ui[lang].btn}</button>
+                </div>
+            `;
+            container.appendChild(card);
+        }
+
+        // Камера (Intersection Observer) — грузит только то, что видишь
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target.querySelector('img');
+                    if (img.dataset.src) {
+                        img.src = img.dataset.src;
+                        img.removeAttribute('data-src');
+                    }
+                }
+            });
+        }, { rootMargin: '200px' }); // Начинает грузить за 200px до появления
+
+        document.querySelectorAll('.card').forEach(card => observer.observe(card));
+
+        function unlock(id) {
+            // Сюда потом вставим код RichAds
+            const card = document.getElementById(id);
+            const btn = card.querySelector('.btn');
+            btn.innerText = "...";
+            
+            setTimeout(() => {
+                card.classList.add('unlocked');
+            }, 800);
+        }
+    </script>
+</body>
+</html>
