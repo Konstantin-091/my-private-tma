@@ -6,40 +6,37 @@
     <title>PRIVATE STORAGE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #0e1621; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; user-select: none; }
+        body { background-color: #0e1621; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        /* Telegram-style Sticky Header */
+        /* Sticky Header */
         .header { position: sticky; top: 0; z-index: 100; background: #17212b; padding: 12px 16px; border-bottom: 1px solid #0b1118; display: flex; align-items: center; }
         .header-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, #ff595a, #b33a3a); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .header-info { margin-left: 12px; }
         .header-title { font-weight: bold; font-size: 15px; }
         .header-status { color: #6ab2f2; font-size: 12px; }
 
-        .feed { display: flex; flex-direction: column; gap: 10px; padding: 10px; max-width: 500px; margin: 0 auto; }
+        .feed { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 500px; margin: 0 auto; }
 
-        /* Message Card */
-        .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
-        .file-info { padding: 10px 14px; font-size: 12px; color: #8295a5; font-family: 'Courier New', monospace; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        /* Card */
+        .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; display: none; /* Скрыты по умолчанию, пока не подтвердится наличие фото */ box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+        .file-info { padding: 10px 14px; font-size: 12px; color: #8295a5; font-family: monospace; }
 
-        /* Media Container 9:16 */
-        .media-box { position: relative; width: 100%; aspect-ratio: 9/16; background: #101921; cursor: pointer; }
-        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(18px) brightness(0.8); transition: filter 0.4s ease; }
+        /* Идеальный 9:16 адаптив */
+        .media-box { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #101921; cursor: pointer; }
+        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(16px) brightness(0.8); transition: filter 0.4s ease; }
         
-        /* Unlocked State */
         .unlocked img { filter: blur(0) brightness(1); }
         .unlocked .noise, .unlocked .overlay { display: none; }
 
-        /* Noise Overlay */
-        .noise { position: absolute; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.22; pointer-events: none; z-index: 2; }
+        .noise { position: absolute; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.2; pointer-events: none; z-index: 2; }
 
-        /* Unlock Button */
         .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; }
-        .unlock-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 14px 28px; border-radius: 25px; font-weight: bold; font-size: 14px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .unlock-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 14px 28px; border-radius: 25px; font-weight: bold; font-size: 14px; }
 
-        /* Fullscreen View */
+        /* Fullscreen */
         #fullscreen { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; align-items: center; justify-content: center; }
         #fullscreen img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        #fs-close { position: absolute; top: 20px; right: 20px; font-size: 30px; color: white; background: rgba(0,0,0,0.5); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        #fs-close { position: absolute; top: 20px; right: 20px; font-size: 30px; background: rgba(0,0,0,0.5); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
 
         .footer-stats { padding: 6px 14px; display: flex; justify-content: flex-end; gap: 10px; font-size: 11px; color: #7f91a4; }
     </style>
@@ -65,41 +62,36 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- MANAGE YOUR CONTENT HERE ---
-        const totalImages = 2; // Number of images you uploaded (1.jpg, 2.jpg...)
-        // --------------------------------
-
-        // Multi-language support
         const userLang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
         const ui = {
             en: { title: "PRIVATE STORAGE 🔒", subs: "subscribers", btn: "Unlock Content" },
             ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", subs: "подписчиков", btn: "Разблокировать фото" }
         };
 
-        // Apply Language
         document.getElementById('h-title').innerText = ui[userLang].title;
         document.getElementById('h-sub').innerText = `124 582 ${ui[userLang].subs}`;
 
         const container = document.getElementById('gallery');
         
-        function getRandomFileName() {
+        function getRandomName() {
             const prefixes = ['IMG', 'DCIM', 'FILE', 'PV'];
-            return `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${Math.floor(1000 + Math.random() * 8999)}.jpg`;
+            // Убрал расширение файла из вывода
+            return `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${Math.floor(1000 + Math.random() * 8999)}`;
         }
 
-        // Generate Cards
-        for (let i = 1; i <= totalImages; i++) {
+        // Авто-создание карточек (пробуем найти до 1000 файлов)
+        for (let i = 1; i <= 1000; i++) {
             const msg = document.createElement('div');
             msg.className = 'message';
             msg.id = 'msg' + i;
             
             const time = Math.floor(Math.random() * 24) + ":" + Math.floor(Math.random() * 60).toString().padStart(2, '0');
-            const views = (Math.random() * (15 - 1) + 1).toFixed(1) + "K";
+            const views = (Math.random() * (12 - 1) + 1).toFixed(1) + "K";
 
             msg.innerHTML = `
-                <div class="file-info">📄 ${getRandomFileName()}</div>
+                <div class="file-info">📄 ${getRandomName()}</div>
                 <div class="media-box" onclick="tryZoom('msg${i}')">
-                    <img data-src="${i}.jpg" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+                    <img src="${i}.jpg" onerror="this.parentElement.parentElement.remove()">
                     <div class="noise"></div>
                     <div class="overlay">
                         <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">${ui[userLang].btn}</button>
@@ -111,37 +103,23 @@
                 </div>
             `;
             container.appendChild(msg);
+            
+            // Если картинка загрузилась - показываем блок
+            const img = msg.querySelector('img');
+            img.onload = () => msg.style.display = 'block';
         }
 
-        // Intersection Observer (The "Camera" logic)
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    const img = entry.target.querySelector('img');
-                    if (img.dataset.src) {
-                        img.src = img.dataset.src;
-                        img.removeAttribute('data-src');
-                    }
-                }
-            });
-        }, { rootMargin: '350px' });
-
-        document.querySelectorAll('.message').forEach(m => observer.observe(m));
-
-        // Unlock Logic
         function handleUnlock(id) {
             const btn = document.getElementById(id).querySelector('.unlock-btn');
             btn.innerText = "...";
 
-            // --- THIS IS WHERE RICHADS SCRIPT GOES ---
-            // Simulating ad delay
+            // СЮДА ВСТАВИМ RICHADS
             setTimeout(() => {
                 document.getElementById(id).classList.add('unlocked');
                 tg.HapticFeedback.notificationOccurred('success');
             }, 800);
         }
 
-        // Fullscreen Zoom
         function tryZoom(id) {
             const el = document.getElementById(id);
             if (el.classList.contains('unlocked')) {
