@@ -5,10 +5,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PRIVATE STORAGE</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+    <script>
+        // Инициализация по твоим данным
+        window.TelegramAdsController = new TelegramAdsController();
+        window.TelegramAdsController.initialize({
+            pubId: "986023",
+            appId: "6223",
+        });
+    </script>
+
     <style>
         body { background-color: #0e1621; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
-        
-        /* Sticky Header */
         .header { position: sticky; top: 0; z-index: 100; background: #17212b; padding: 12px 16px; border-bottom: 1px solid #0b1118; display: flex; align-items: center; }
         .header-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, #ff595a, #b33a3a); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .header-info { margin-left: 12px; }
@@ -17,38 +26,33 @@
 
         .feed { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 500px; margin: 0 auto; }
 
-        /* Card - Hidden by default */
         .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; display: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
         .file-info { padding: 10px 14px; font-size: 12px; color: #8295a5; font-family: monospace; }
 
-        /* Fixed 9:16 Aspect Ratio */
+        /* Адаптив 9:16 */
         .media-box { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #101921; cursor: pointer; }
-        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(18px) brightness(0.8); transition: filter 0.4s ease; }
+        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(25px) brightness(0.7); transition: filter 0.5s ease; }
         
-        .unlocked img { filter: blur(0) brightness(1); }
-        .unlocked .noise, .unlocked .overlay { display: none; }
+        .unlocked img { filter: blur(0) brightness(1) !important; }
+        .unlocked .noise, .unlocked .overlay { display: none !important; }
 
-        .noise { position: absolute; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.2; pointer-events: none; z-index: 2; }
+        .noise { position: absolute; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.25; pointer-events: none; z-index: 2; }
+        .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; background: rgba(0,0,0,0.2); }
+        
+        .unlock-btn { 
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); 
+            border: 1px solid rgba(255, 255, 255, 0.2); color: white; 
+            padding: 14px 24px; border-radius: 25px; font-weight: bold; font-size: 14px;
+            transition: all 0.2s;
+        }
+        .unlock-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; }
-        .unlock-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 14px 28px; border-radius: 25px; font-weight: bold; font-size: 14px; }
-
-        /* Fullscreen View */
         #fullscreen { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; align-items: center; justify-content: center; }
         #fullscreen img { max-width: 100%; max-height: 100%; object-fit: contain; }
         #fs-close { position: absolute; top: 20px; right: 20px; font-size: 30px; background: rgba(0,0,0,0.5); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; }
 
         .footer-stats { padding: 6px 14px; display: flex; justify-content: flex-end; gap: 10px; font-size: 11px; color: #7f91a4; }
     </style>
-
-          <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
-          <script>
-            window.TelegramAdsController = new TelegramAdsController();
-            window.TelegramAdsController.initialize({
-              pubId: "986023",
-              appId: "6223",
-            });
-          </script>    
 </head>
 <body>
 
@@ -60,7 +64,7 @@
     <div class="header">
         <div class="header-avatar">PS</div>
         <div class="header-info">
-            <div class="header-title" id="h-title">PRIVATE STORAGE 🔒</div>
+            <div class="header-title" id="h-title">PRIVATE STORAGE</div>
             <div class="header-status" id="h-sub">124 582 subscribers</div>
         </div>
     </div>
@@ -70,11 +74,12 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        tg.enableClosingConfirmation(); // Чтобы случайно не закрыли
 
         const userLang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
         const ui = {
-            en: { title: "PRIVATE STORAGE 🔒", subs: "subscribers", btn: "Unlock Content" },
-            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", subs: "подписчиков", btn: "Разблокировать фото" }
+            en: { title: "PRIVATE STORAGE 🔒", subs: "subscribers", btn: "Unlock to view (AD)", loading: "Loading ad...", error: "Ad error, try again" },
+            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", subs: "подписчиков", btn: "Открыть за рекламу", loading: "Загрузка...", error: "Ошибка рекламы" }
         };
 
         document.getElementById('h-title').innerText = ui[userLang].title;
@@ -88,14 +93,13 @@
             return `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${Math.floor(1000 + Math.random() * 8999)}`;
         }
 
-        // Авто-сканирование (пробуем найти до 1000 файлов)
-        for (let i = 1; i <= 1000; i++) {
+        // Генерируем карточки
+        for (let i = 1; i <= 200; i++) { // Проверяем первые 200 файлов
             const msg = document.createElement('div');
             msg.className = 'message';
             msg.id = 'msg' + i;
-            
             const time = Math.floor(Math.random() * 24) + ":" + Math.floor(Math.random() * 60).toString().padStart(2, '0');
-            const views = (Math.random() * (12 - 1) + 1).toFixed(1) + "K";
+            const views = (Math.random() * (15 - 1) + 1).toFixed(1) + "K";
 
             msg.innerHTML = `
                 <div class="file-info">📄 ${getRandomName()}</div>
@@ -106,10 +110,7 @@
                         <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">${ui[userLang].btn}</button>
                     </div>
                 </div>
-                <div class="footer-stats">
-                    <span>👁 ${views}</span>
-                    <span>${time}</span>
-                </div>
+                <div class="footer-stats"><span>👁 ${views}</span><span>${time}</span></div>
             `;
             container.appendChild(msg);
             
@@ -120,27 +121,48 @@
                 if (extIndex < extensions.length) {
                     currentImg.src = `${i}.${extensions[extIndex]}`;
                     extIndex++;
-                } else {
-                    // Если перебрали все расширения и ничего не нашли — удаляем карточку
-                    msg.remove();
-                }
+                } else { msg.remove(); }
             }
-
-            currentImg.onerror = tryLoad; // Если ошибка (файл не найден), пробуем следующее расширение
-            currentImg.onload = () => msg.style.display = 'block'; // Если загрузилось — показываем пост
-            
-            tryLoad(); // Запуск первой попытки
+            currentImg.onerror = tryLoad;
+            currentImg.onload = () => msg.style.display = 'block';
+            tryLoad();
         }
 
+        // СТРОГАЯ ЛОГИКА РЕКЛАМЫ
         function handleUnlock(id) {
             const btn = document.getElementById(id).querySelector('.unlock-btn');
-            btn.innerText = "...";
+            if(btn.disabled) return;
 
-            // МЕСТО ДЛЯ СКРИПТА RICHADS
-            setTimeout(() => {
-                document.getElementById(id).classList.add('unlocked');
-                tg.HapticFeedback.notificationOccurred('success');
-            }, 800);
+            btn.disabled = true;
+            btn.innerText = ui[userLang].loading;
+
+            if (window.TelegramAdsController) {
+                window.TelegramAdsController.showAd({
+                    zoneId: "388405", // Твоя зона Interstitial Video
+                    onCompleted: function() {
+                        // Только здесь открываем!
+                        document.getElementById(id).classList.add('unlocked');
+                        tg.HapticFeedback.notificationOccurred('success');
+                    },
+                    onCanceled: function() {
+                        btn.disabled = false;
+                        btn.innerText = ui[userLang].btn;
+                        tg.HapticFeedback.notificationOccurred('warning');
+                    },
+                    onError: function() {
+                        // Если реклама сдохла - даем шанс открыть через 2 сек, чтобы не терять юзера
+                        setTimeout(() => {
+                            document.getElementById(id).classList.add('unlocked');
+                            tg.HapticFeedback.notificationOccurred('success');
+                        }, 2000);
+                    }
+                });
+            } else {
+                // План Б если скрипт не загрузился
+                setTimeout(() => {
+                   document.getElementById(id).classList.add('unlocked');
+                }, 1000);
+            }
         }
 
         function tryZoom(id) {
@@ -149,16 +171,10 @@
                 const src = el.querySelector('img').src;
                 document.getElementById('full-img').src = src;
                 document.getElementById('fullscreen').style.display = 'flex';
-                tg.HapticFeedback.impactOccurred('medium');
-            } else {
-                tg.HapticFeedback.impactOccurred('light');
             }
         }
 
-        function closeFull() {
-            document.getElementById('fullscreen').style.display = 'none';
-        }
+        function closeFull() { document.getElementById('fullscreen').style.display = 'none'; }
     </script>
 </body>
 </html>
-
