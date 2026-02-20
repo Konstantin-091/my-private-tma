@@ -4,16 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PRIVATE STORAGE</title>
-
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-
+    
     <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
     <script>
       window.TelegramAdsController = new TelegramAdsController();
-      window.TelegramAdsController.initialize({
-        pubId: "986023",
-        appId: "6223",
-      });
+      window.TelegramAdsController.initialize({ pubId: "986023", appId: "6223" });
     </script>
     
     <style>
@@ -22,21 +18,31 @@
         .header-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, #ff595a, #b33a3a); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .header-info { margin-left: 12px; }
         .header-title { font-weight: bold; font-size: 15px; }
+        
         .feed { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 500px; margin: 0 auto; }
-        .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.4); display: none; } /* Скрыто, пока не загрузится картинка */
         
+        /* Telegram Style Message */
+        .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.4); display: none; }
+        .post-label { padding: 10px 14px; font-size: 13px; font-weight: bold; color: #8295a5; font-family: monospace; border-bottom: 1px solid rgba(0,0,0,0.1); }
+        
+        /* 9:16 Адаптив */
         .media-box { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #101921; cursor: pointer; }
-        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(25px) brightness(0.7); transition: filter 0.4s ease; }
-        .unlocked img { filter: blur(0) brightness(1) !important; }
-        .unlocked .overlay { display: none !important; }
+        .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(22px) brightness(0.7); transition: filter 0.4s ease; }
         
+        .unlocked img { filter: blur(0) brightness(1) !important; }
+        .unlocked .noise, .unlocked .overlay { display: none !important; }
+        
+        .noise { position: absolute; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.22; pointer-events: none; z-index: 2; }
         .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; background: rgba(0,0,0,0.2); }
         .unlock-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 14px 28px; border-radius: 25px; font-weight: bold; font-size: 14px; }
-        
+
+        .post-footer { padding: 6px 14px; display: flex; justify-content: flex-end; gap: 10px; font-size: 11px; color: #7f91a4; }
+
+        /* Пагинация */
         .pagination { display: flex; justify-content: center; gap: 8px; padding: 20px; flex-wrap: wrap; }
         .page-btn { background: #17212b; border: 1px solid #2b3b4b; color: #fff; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
         .page-btn.active { background: #ff595a; border-color: #ff595a; }
-        
+
         #fullscreen { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; align-items: center; justify-content: center; }
         #fullscreen img { max-width: 100%; max-height: 100%; object-fit: contain; }
     </style>
@@ -57,26 +63,30 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- ТВОИ НАСТРОЙКИ ---
-        const totalImages = 164; // Твое текущее число картинок [cite: 2026-02-17]
-        const perPage = 30;
+        // --- НАСТРОЙКИ ---
+        const totalImages = 164; // ТВОЕ ОБЩЕЕ ЧИСЛО ФОТО [cite: 2026-02-17]
+        const perPage = 30;     
         const DIRECT_LINK = "https://10183.xml.4armn.com/direct-link?pubid=986023&siteid=[SITE_ID]";
-        // ----------------------
+        // ----------------
 
         const userLang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
         const ui = {
-            en: { title: "PRIVATE STORAGE 🔒", btn: "Unlock Content (AD)", file: "FILE" },
-            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", btn: "Открыть за рекламу", file: "ФАЙЛ" }
+            en: { title: "PRIVATE STORAGE 🔒", btn: "Unlock Content (AD)" },
+            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", btn: "Открыть за рекламу" }
         };
 
         document.getElementById('h-title').innerText = ui[userLang].title;
         let currentPage = 1;
 
+        function getRandomName() {
+            const pref = ['IMG', 'DCIM', 'FILE', 'PV'];
+            return `${pref[Math.floor(Math.random() * pref.length)]}_${Math.floor(1000 + Math.random() * 8999)}`;
+        }
+
         function loadPage(page) {
             const container = document.getElementById('gallery');
             container.innerHTML = '';
             
-            // Новые сверху: считаем от большего к меньшему [cite: 2026-02-17]
             const start = totalImages - (page - 1) * perPage;
             const end = Math.max(1, start - perPage + 1);
 
@@ -84,33 +94,36 @@
                 const msg = document.createElement('div');
                 msg.className = 'message';
                 msg.id = 'msg' + i;
+                
+                const views = (Math.random() * (12 - 1) + 1).toFixed(1) + "K";
+                const time = Math.floor(Math.random() * 24) + ":" + Math.floor(Math.random() * 60).toString().padStart(2, '0');
+
                 msg.innerHTML = `
-                    <div style="padding:10px; font-size:12px; color:#8295a5;">📄 ${ui[userLang].file}_${i}</div>
+                    <div class="post-label">📄 ${getRandomName()}</div>
                     <div class="media-box" onclick="tryZoom('msg${i}')">
                         <img id="img${i}" src="">
+                        <div class="noise"></div>
                         <div class="overlay">
                             <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">${ui[userLang].btn}</button>
                         </div>
                     </div>
+                    <div class="post-footer"><span>👁 ${views}</span><span>${time}</span></div>
                 `;
                 container.appendChild(msg);
                 
-                // Исправленная логика перебора форматов [cite: 2026-02-17]
                 const img = document.getElementById(`img${i}`);
                 const exts = ['jpg', 'png', 'webp', 'jpeg'];
-                let currentExt = 0;
+                let extIdx = 0;
 
                 function tryLoad() {
-                    if (currentExt < exts.length) {
-                        img.src = `${i}.${exts[currentExt]}`;
-                        currentExt++;
-                    } else {
-                        msg.remove(); // Если ни один формат не подошел - удаляем карточку
-                    }
+                    if (extIdx < exts.length) {
+                        img.src = `${i}.${exts[extIdx]}`;
+                        extIdx++;
+                    } else { msg.remove(); }
                 }
 
                 img.onerror = tryLoad;
-                img.onload = () => msg.style.display = 'block'; // Показываем только когда загрузилось [cite: 2026-02-17]
+                img.onload = () => msg.style.display = 'block';
                 tryLoad();
             }
             updatePagination();
@@ -121,7 +134,6 @@
             const pContainer = document.getElementById('pagination');
             pContainer.innerHTML = '';
             const totalPages = Math.ceil(totalImages / perPage);
-
             for (let i = 1; i <= totalPages; i++) {
                 const btn = document.createElement('button');
                 btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
@@ -132,10 +144,10 @@
         }
 
         function handleUnlock(id) {
-            tg.openLink(DIRECT_LINK); // Прямая ссылка [cite: 2026-02-17]
+            tg.openLink(DIRECT_LINK); [cite: 2026-02-17]
             setTimeout(() => {
                 document.getElementById(id).classList.add('unlocked');
-                tg.HapticFeedback.notificationOccurred('success'); [cite: 2026-02-17]
+                tg.HapticFeedback.notificationOccurred('success');
             }, 600);
         }
 
