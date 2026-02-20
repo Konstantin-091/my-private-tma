@@ -19,11 +19,9 @@
         .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; display: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
         .file-info { padding: 10px 14px; font-size: 12px; color: #8295a5; font-family: monospace; }
         
-        /* Адаптив 9:16 */
         .media-box { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #101921; cursor: pointer; }
         .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(20px) brightness(0.8); transition: filter 0.4s ease; }
         
-        /* Класс разблокировки */
         .media-box.unlocked img { filter: blur(0) brightness(1) !important; }
         .media-box.unlocked .noise, .media-box.unlocked .overlay { display: none !important; }
         
@@ -36,7 +34,6 @@
         #fs-close { position: absolute; top: 20px; right: 20px; font-size: 30px; background: rgba(0,0,0,0.5); width: 44px; height: 44px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; cursor: pointer; }
         .footer-stats { padding: 6px 14px; display: flex; justify-content: flex-end; gap: 10px; font-size: 11px; color: #7f91a4; }
 
-        /* Пагинация */
         .pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 20px 12px 40px; max-width: 500px; margin: 0 auto; }
         .page-btn { background: #182533; border: 1px solid #2b3a4a; color: #8295a5; padding: 8px 14px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
         .page-btn.active { background: #2b5278; color: #ffffff; border-color: #3a6d9e; font-weight: bold; }
@@ -65,7 +62,6 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // Твоя прямая ссылка для монетизации
         const DIRECT_LINK = "https://10183.xml.4armn.com/direct-link?pubid=986023&siteid=[SITE_ID]";
 
         const userLang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
@@ -79,21 +75,27 @@
         const paginationContainer = document.getElementById('pagination');
         const extensions = ['jpg', 'png', 'webp', 'jpeg'];
         
-        const TOTAL_IMAGES = 1000; 
-        const ITEMS_PER_PAGE = 30; 
-        const TOTAL_PAGES = Math.ceil(TOTAL_IMAGES / ITEMS_PER_PAGE);
+        // ==========================================
+        // НАСТРОЙКИ ГАЛЕРЕИ
+        // ==========================================
+        const LATEST_IMAGE_NUM = 59; // <-- МЕНЯЙ ТОЛЬКО ЭТО ЧИСЛО! Укажи номер самой свежей картинки
+        const ITEMS_PER_PAGE = 30; // Сколько картинок на одной странице
+        // ==========================================
+
+        const TOTAL_PAGES = Math.ceil(LATEST_IMAGE_NUM / ITEMS_PER_PAGE);
         let currentPage = 1;
 
-        function getRandomName() {
+        function getRandomName(id) {
             const prefixes = ['IMG', 'DCIM', 'FILE', 'PV'];
-            return `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${Math.floor(1000 + Math.random() * 8999)}`;
+            return `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${id}`;
         }
 
         function renderPage(page) {
             currentPage = page;
             container.innerHTML = ''; 
             
-            const startId = TOTAL_IMAGES - (page - 1) * ITEMS_PER_PAGE;
+            // Высчитываем, с какого ID начать и каким закончить на текущей странице
+            const startId = LATEST_IMAGE_NUM - (page - 1) * ITEMS_PER_PAGE;
             const endId = Math.max(1, startId - ITEMS_PER_PAGE + 1);
 
             for (let i = startId; i >= endId; i--) {
@@ -104,7 +106,7 @@
                 const views = (Math.random() * (12 - 1) + 1).toFixed(1) + "K";
 
                 msg.innerHTML = `
-                    <div class="file-info">📄 ${getRandomName()}</div>
+                    <div class="file-info">📄 ${getRandomName(i)}</div>
                     <div class="media-box" onclick="tryZoom('msg${i}')">
                         <img class="gallery-img" src="">
                         <div class="noise"></div>
@@ -124,7 +126,7 @@
                         currentImg.src = `${i}.${extensions[extIndex]}`;
                         extIndex++;
                     } else { 
-                        msg.remove(); 
+                        msg.remove(); // Если файл не найден, просто удаляем этот блок, чтобы не портить вид
                     }
                 }
                 currentImg.onerror = tryLoad;
@@ -138,6 +140,10 @@
 
         function renderPagination() {
             paginationContainer.innerHTML = '';
+            
+            // Если страниц всего 1, кнопки можно вообще не показывать
+            if (TOTAL_PAGES <= 1) return;
+
             for (let p = 1; p <= TOTAL_PAGES; p++) {
                 const btn = document.createElement('button');
                 btn.className = `page-btn ${p === currentPage ? 'active' : ''}`;
@@ -148,14 +154,12 @@
         }
 
         function handleUnlock(id) {
-            // 1. Открываем рекламу (директ-линк)
             if (tg && tg.openLink) {
                 tg.openLink(DIRECT_LINK);
             } else {
                 window.open(DIRECT_LINK, '_blank');
             }
 
-            // 2. Снимаем блюр с картинки
             const msgEl = document.getElementById(id);
             if (msgEl) {
                 const mediaBox = msgEl.querySelector('.media-box');
@@ -169,7 +173,6 @@
             const el = document.getElementById(id);
             if (el) {
                 const mediaBox = el.querySelector('.media-box');
-                // Проверяем, есть ли класс unlocked у media-box
                 if (mediaBox && mediaBox.classList.contains('unlocked')) {
                     document.getElementById('full-img').src = el.querySelector('img').src;
                     document.getElementById('fullscreen').style.display = 'flex';
@@ -184,6 +187,7 @@
             document.getElementById('fullscreen').style.display = 'none'; 
         }
 
+        // Запускаем отрисовку первой страницы
         renderPage(1);
 
     </script>
