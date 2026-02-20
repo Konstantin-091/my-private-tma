@@ -4,32 +4,39 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>PRIVATE STORAGE</title>
+
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <script src="https://richinfo.co/richpartners/telegram/js/tg-ob.js"></script>
+    <script>
+      window.TelegramAdsController = new TelegramAdsController();
+      window.TelegramAdsController.initialize({
+        pubId: "986023",
+        appId: "6223",
+      });
+    </script>
+    
     <style>
         body { background-color: #0e1621; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
         .header { position: sticky; top: 0; z-index: 100; background: #17212b; padding: 12px 16px; border-bottom: 1px solid #0b1118; display: flex; align-items: center; }
         .header-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, #ff595a, #b33a3a); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .header-info { margin-left: 12px; }
         .header-title { font-weight: bold; font-size: 15px; }
-        
         .feed { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 500px; margin: 0 auto; }
-        .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+        .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.4); display: none; } /* Скрыто, пока не загрузится картинка */
         
-        /* Жесткий адаптив 9:16 */
         .media-box { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #101921; cursor: pointer; }
         .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(25px) brightness(0.7); transition: filter 0.4s ease; }
-        
         .unlocked img { filter: blur(0) brightness(1) !important; }
         .unlocked .overlay { display: none !important; }
         
         .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; background: rgba(0,0,0,0.2); }
-        .unlock-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(15px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 14px 28px; border-radius: 25px; font-weight: bold; font-size: 14px; }
-
-        /* Пагинация цифрами */
+        .unlock-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 14px 28px; border-radius: 25px; font-weight: bold; font-size: 14px; }
+        
         .pagination { display: flex; justify-content: center; gap: 8px; padding: 20px; flex-wrap: wrap; }
         .page-btn { background: #17212b; border: 1px solid #2b3b4b; color: #fff; padding: 10px 15px; border-radius: 8px; cursor: pointer; }
         .page-btn.active { background: #ff595a; border-color: #ff595a; }
-
+        
         #fullscreen { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; align-items: center; justify-content: center; }
         #fullscreen img { max-width: 100%; max-height: 100%; object-fit: contain; }
     </style>
@@ -50,19 +57,26 @@
         const tg = window.Telegram.WebApp;
         tg.expand();
 
-        // --- ТВОИ ЕДИНСТВЕННЫЕ НАСТРОЙКИ ---
-        const totalImages = 1000; // ПРОСТО МЕНЯЙ ЭТУ ЦИФРУ ПРИ ДОБАВЛЕНИИ ФОТО [cite: 2026-02-17]
-        const perPage = 30;     // Сколько фото на одной странице
+        // --- ТВОИ НАСТРОЙКИ ---
+        const totalImages = 164; // Твое текущее число картинок [cite: 2026-02-17]
+        const perPage = 30;
         const DIRECT_LINK = "https://10183.xml.4armn.com/direct-link?pubid=986023&siteid=[SITE_ID]";
-        // ----------------------------------
+        // ----------------------
 
+        const userLang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
+        const ui = {
+            en: { title: "PRIVATE STORAGE 🔒", btn: "Unlock Content (AD)", file: "FILE" },
+            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", btn: "Открыть за рекламу", file: "ФАЙЛ" }
+        };
+
+        document.getElementById('h-title').innerText = ui[userLang].title;
         let currentPage = 1;
 
         function loadPage(page) {
             const container = document.getElementById('gallery');
             container.innerHTML = '';
             
-            // Расчет для показа новых сверху (от большего к меньшему) [cite: 2026-02-17]
+            // Новые сверху: считаем от большего к меньшему [cite: 2026-02-17]
             const start = totalImages - (page - 1) * perPage;
             const end = Math.max(1, start - perPage + 1);
 
@@ -71,18 +85,36 @@
                 msg.className = 'message';
                 msg.id = 'msg' + i;
                 msg.innerHTML = `
-                    <div style="padding:10px; font-size:12px; color:#8295a5;">📄 FILE_${i}</div>
+                    <div style="padding:10px; font-size:12px; color:#8295a5;">📄 ${ui[userLang].file}_${i}</div>
                     <div class="media-box" onclick="tryZoom('msg${i}')">
-                        <img id="img${i}" src="${i}.jpg" loading="lazy">
+                        <img id="img${i}" src="">
                         <div class="overlay">
-                            <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">Открыть за рекламу</button>
+                            <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">${ui[userLang].btn}</button>
                         </div>
                     </div>
                 `;
                 container.appendChild(msg);
+                
+                // Исправленная логика перебора форматов [cite: 2026-02-17]
+                const img = document.getElementById(`img${i}`);
+                const exts = ['jpg', 'png', 'webp', 'jpeg'];
+                let currentExt = 0;
+
+                function tryLoad() {
+                    if (currentExt < exts.length) {
+                        img.src = `${i}.${exts[currentExt]}`;
+                        currentExt++;
+                    } else {
+                        msg.remove(); // Если ни один формат не подошел - удаляем карточку
+                    }
+                }
+
+                img.onerror = tryLoad;
+                img.onload = () => msg.style.display = 'block'; // Показываем только когда загрузилось [cite: 2026-02-17]
+                tryLoad();
             }
             updatePagination();
-            window.scrollTo(0, 0); // Прыгаем вверх при смене страницы [cite: 2026-02-17]
+            window.scrollTo(0, 0);
         }
 
         function updatePagination() {
@@ -94,19 +126,16 @@
                 const btn = document.createElement('button');
                 btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
                 btn.innerText = i;
-                btn.onclick = () => {
-                    currentPage = i;
-                    loadPage(i);
-                };
+                btn.onclick = () => { currentPage = i; loadPage(i); };
                 pContainer.appendChild(btn);
             }
         }
 
         function handleUnlock(id) {
-            tg.openLink(DIRECT_LINK); // Открываем твой директ линк [cite: 2026-02-17]
+            tg.openLink(DIRECT_LINK); // Прямая ссылка [cite: 2026-02-17]
             setTimeout(() => {
                 document.getElementById(id).classList.add('unlocked');
-                tg.HapticFeedback.notificationOccurred('success'); // Вибрация успеха [cite: 2026-02-17]
+                tg.HapticFeedback.notificationOccurred('success'); [cite: 2026-02-17]
             }, 600);
         }
 
@@ -119,7 +148,6 @@
             }
         }
 
-        // Запуск первой страницы
         loadPage(1);
     </script>
 </body>
