@@ -15,19 +15,23 @@
         .header-title { font-weight: bold; font-size: 15px; }
         .header-status { color: #6ab2f2; font-size: 12px; }
         
+        .smartlink-top { position: sticky; top: 63px; z-index: 99; background: linear-gradient(90deg, #ff8a00, #e52e71); text-align: center; padding: 10px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
+        
         .feed { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 500px; margin: 0 auto; min-height: 60vh; }
         .message { background: #182533; border-radius: 12px; overflow: hidden; position: relative; display: none; box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
         .file-info { padding: 10px 14px; font-size: 12px; color: #8295a5; font-family: monospace; }
         
         .media-box { position: relative; width: 100%; aspect-ratio: 9 / 16; background: #101921; cursor: pointer; }
         .media-box img { width: 100%; height: 100%; object-fit: cover; filter: blur(20px) brightness(0.8); transition: filter 0.4s ease; }
-        
         .media-box.unlocked img { filter: blur(0) brightness(1) !important; }
         .media-box.unlocked .noise, .media-box.unlocked .overlay { display: none !important; }
         
         .noise { position: absolute; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.2; pointer-events: none; z-index: 2; }
         .overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; z-index: 3; background: rgba(0,0,0,0.2); }
         .unlock-btn { background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.2); color: white; padding: 14px 28px; border-radius: 25px; font-weight: bold; font-size: 14px; cursor: pointer; }
+        
+        .native-ad-box { background: #2b3a4a; border-radius: 12px; padding: 20px 15px; text-align: center; border: 1px solid #4a5a6a; margin: 5px 0; }
+        .native-ad-btn { background: #4caf50; color: white; border: none; padding: 12px 20px; border-radius: 8px; font-weight: bold; margin-top: 10px; cursor: pointer; width: 100%; }
         
         #fullscreen { display: none; position: fixed; inset: 0; background: #000; z-index: 1000; align-items: center; justify-content: center; }
         #fullscreen img { max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -37,8 +41,8 @@
         .pagination { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; padding: 20px 12px 40px; max-width: 500px; margin: 0 auto; }
         .page-btn { background: #182533; border: 1px solid #2b3a4a; color: #8295a5; padding: 8px 14px; border-radius: 8px; font-size: 14px; cursor: pointer; transition: all 0.2s; }
         .page-btn.active { background: #2b5278; color: #ffffff; border-color: #3a6d9e; font-weight: bold; }
-        .page-btn:active { transform: scale(0.95); }
     </style>
+    <script src='//libtl.com/sdk.js' data-zone='10629884' data-sdk='show_10629884'></script>
 </head>
 <body>
 
@@ -50,74 +54,99 @@
     <div class="header">
         <div class="header-avatar">PS</div>
         <div class="header-info">
-            <div class="header-title" id="h-title">PRIVATE STORAGE 🔒</div>
+            <div class="header-title" id="h-title">PRIVATE GALLERY 🔒</div>
             <div class="header-status" id="h-sub">124 582 subscribers</div>
         </div>
+    </div>
+    
+    <div class="smartlink-top" onclick="openSmartlink()">
+        🔥 СКАЧАТЬ ВЕСЬ АРХИВ БЕЗ БЛЮРА 🔥
     </div>
 
     <div id="gallery" class="feed"></div>
     <div id="pagination" class="pagination"></div>
 
     <script>
+        const LATEST_IMAGE_NUM = 59; // Меняй на номер последней картинки
+        const ITEMS_PER_PAGE = 30;
+        const SMARTLINK_URL = "https://omg10.com/4/10601908"; 
+
         const tg = window.Telegram.WebApp;
         tg.expand();
-
-        const DIRECT_LINK = "https://10183.xml.4armn.com/direct-link?pubid=986023&siteid=[SITE_ID]";
-
-        const userLang = tg.initDataUnsafe?.user?.language_code === 'ru' ? 'ru' : 'en';
-        const ui = {
-            en: { title: "PRIVATE STORAGE 🔒", btn: "Unlock Content (AD)" },
-            ru: { title: "ПРИВАТНЫЙ АРХИВ 🔒", btn: "Открыть за рекламу" }
-        };
-
-        document.getElementById('h-title').innerText = ui[userLang].title;
         const container = document.getElementById('gallery');
         const paginationContainer = document.getElementById('pagination');
         const extensions = ['jpg', 'png', 'webp', 'jpeg'];
         
-        // ==========================================
-        // НАСТРОЙКИ ГАЛЕРЕИ
-        // ==========================================
-        const LATEST_IMAGE_NUM = 59; // <-- МЕНЯЙ ТОЛЬКО ЭТО ЧИСЛО! Укажи номер самой свежей картинки
-        const ITEMS_PER_PAGE = 30; // Сколько картинок на одной странице
-        // ==========================================
-
         const TOTAL_PAGES = Math.ceil(LATEST_IMAGE_NUM / ITEMS_PER_PAGE);
         let currentPage = 1;
+
+        // ЗАПУСК ФОНОВОЙ РЕКЛАМЫ (In-App Interstitial)
+        function initAutoAds() {
+            if (typeof show_10629884 === 'function') {
+                show_10629884({
+                    type: 'inApp',
+                    inAppSettings: {
+                        frequency: 2,
+                        capping: 0.1,
+                        interval: 30,
+                        timeout: 5,
+                        everyPage: false
+                    }
+                });
+            }
+        }
 
         function getRandomName(id) {
             const prefixes = ['IMG', 'DCIM', 'FILE', 'PV'];
             return `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${id}`;
         }
 
+        function openSmartlink() {
+            if (tg && tg.openLink) { tg.openLink(SMARTLINK_URL); } 
+            else { window.open(SMARTLINK_URL, '_blank'); }
+        }
+
         function renderPage(page) {
             currentPage = page;
             container.innerHTML = ''; 
             
-            // Высчитываем, с какого ID начать и каким закончить на текущей странице
             const startId = LATEST_IMAGE_NUM - (page - 1) * ITEMS_PER_PAGE;
             const endId = Math.max(1, startId - ITEMS_PER_PAGE + 1);
+            
+            let itemCounter = 0;
 
             for (let i = startId; i >= endId; i--) {
                 const msg = document.createElement('div');
-                msg.className = 'message';
+                msg.className = 'message page-item';
                 msg.id = 'msg' + i;
                 const time = Math.floor(Math.random() * 24) + ":" + Math.floor(Math.random() * 60).toString().padStart(2, '0');
-                const views = (Math.random() * (12 - 1) + 1).toFixed(1) + "K";
-
+                
                 msg.innerHTML = `
                     <div class="file-info">📄 ${getRandomName(i)}</div>
                     <div class="media-box" onclick="tryZoom('msg${i}')">
                         <img class="gallery-img" src="">
                         <div class="noise"></div>
                         <div class="overlay">
-                            <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">${ui[userLang].btn}</button>
+                            <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">Открыть (AD)</button>
                         </div>
                     </div>
-                    <div class="footer-stats"><span>👁 ${views}</span><span>${time}</span></div>
+                    <div class="footer-stats"><span>👁 ${(Math.random() * 11 + 1).toFixed(1)}K</span><span>${time}</span></div>
                 `;
                 container.appendChild(msg);
                 
+                // Вставка блока массовой разблокировки (Rewarded Interstitial)
+                itemCounter++;
+                if (itemCounter === 4 || itemCounter === 14) { 
+                    const nativeAd = document.createElement('div');
+                    nativeAd.className = 'native-ad-box';
+                    nativeAd.innerHTML = `
+                        <div style="font-size:16px; color:#fff; font-weight:bold;">Устали кликать?</div>
+                        <div style="font-size:13px; color:#8295a5; margin-top:5px;">Посмотрите 1 рекламу и откройте сразу все фото на этой странице!</div>
+                        <button class="native-ad-btn" onclick="unlockAllCurrentPage()">🔓 Разблокировать всё</button>
+                    `;
+                    container.appendChild(nativeAd);
+                }
+
                 const currentImg = msg.querySelector('.gallery-img');
                 let extIndex = 0;
                 
@@ -125,9 +154,7 @@
                     if (extIndex < extensions.length) {
                         currentImg.src = `${i}.${extensions[extIndex]}`;
                         extIndex++;
-                    } else { 
-                        msg.remove(); // Если файл не найден, просто удаляем этот блок, чтобы не портить вид
-                    }
+                    } else { msg.remove(); }
                 }
                 currentImg.onerror = tryLoad;
                 currentImg.onload = () => msg.style.display = 'block';
@@ -140,10 +167,7 @@
 
         function renderPagination() {
             paginationContainer.innerHTML = '';
-            
-            // Если страниц всего 1, кнопки можно вообще не показывать
             if (TOTAL_PAGES <= 1) return;
-
             for (let p = 1; p <= TOTAL_PAGES; p++) {
                 const btn = document.createElement('button');
                 btn.className = `page-btn ${p === currentPage ? 'active' : ''}`;
@@ -153,19 +177,39 @@
             }
         }
 
+        // ОТКРЫТИЕ ОДНОЙ КАРТИНКИ (Rewarded Popup)
         function handleUnlock(id) {
-            if (tg && tg.openLink) {
-                tg.openLink(DIRECT_LINK);
+            if (typeof show_10629884 === 'function') {
+                show_10629884('pop').then(() => {
+                    unlockImage(id);
+                }).catch(e => {
+                    console.log("Ad skipped or error");
+                });
             } else {
-                window.open(DIRECT_LINK, '_blank');
+                openSmartlink();
+                unlockImage(id);
             }
+        }
 
+        // ОТКРЫТИЕ ВСЕХ КАРТИНОК НА СТРАНИЦЕ (Rewarded Interstitial)
+        function unlockAllCurrentPage() {
+            if (typeof show_10629884 === 'function') {
+                show_10629884().then(() => {
+                    const allBoxes = document.querySelectorAll('.media-box');
+                    allBoxes.forEach(box => box.classList.add('unlocked'));
+                }).catch(e => {
+                    console.log("Ad skipped or error");
+                });
+            } else {
+                openSmartlink();
+            }
+        }
+
+        function unlockImage(id) {
             const msgEl = document.getElementById(id);
             if (msgEl) {
                 const mediaBox = msgEl.querySelector('.media-box');
-                if (mediaBox) {
-                    mediaBox.classList.add('unlocked');
-                }
+                if (mediaBox) mediaBox.classList.add('unlocked');
             }
         }
 
@@ -183,12 +227,13 @@
             }
         }
         
-        function closeFull() { 
-            document.getElementById('fullscreen').style.display = 'none'; 
-        }
+        function closeFull() { document.getElementById('fullscreen').style.display = 'none'; }
 
-        // Запускаем отрисовку первой страницы
+        // Запуск
         renderPage(1);
+        
+        // Запускаем автоматическую рекламу через полсекунды после загрузки
+        setTimeout(initAutoAds, 500);
 
     </script>
 </body>
