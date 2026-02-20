@@ -8,7 +8,7 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     
     <style>
-        body { background-color: #0e1621; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; padding-bottom: 70px; /* Отступ для нижнего баннера */ }
+        body { background-color: #0e1621; color: #ffffff; font-family: -apple-system, sans-serif; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; padding-bottom: 70px; }
         .header { position: sticky; top: 0; z-index: 100; background: #17212b; padding: 12px 16px; border-bottom: 1px solid #0b1118; display: flex; align-items: center; }
         .header-avatar { width: 38px; height: 38px; background: linear-gradient(135deg, #ff595a, #b33a3a); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; }
         .header-info { margin-left: 12px; }
@@ -17,7 +17,6 @@
         
         .smartlink-top { position: sticky; top: 63px; z-index: 99; background: linear-gradient(90deg, #ff8a00, #e52e71); text-align: center; padding: 10px; font-weight: bold; font-size: 14px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.5); }
         
-        /* Вернули стили нижнего баннера */
         .banner-bottom { position: fixed; bottom: 0; left: 0; width: 100%; height: 60px; background: #17212b; z-index: 99; display: flex; align-items: center; justify-content: center; border-top: 1px solid #2b3a4a; box-shadow: 0 -2px 10px rgba(0,0,0,0.5); }
         
         .feed { display: flex; flex-direction: column; gap: 12px; padding: 12px; max-width: 500px; margin: 0 auto; min-height: 60vh; }
@@ -72,7 +71,7 @@
     </div>
 
     <script>
-        const LATEST_IMAGE_NUM = 59; // Меняй на номер последней картинки
+        const LATEST_IMAGE_NUM = 59; 
         const ITEMS_PER_PAGE = 30;
         const SMARTLINK_URL = "https://omg10.com/4/10601908"; 
 
@@ -90,7 +89,7 @@
             return `${prefixes[Math.floor(Math.random() * prefixes.length)]}_${id}`;
         }
 
-        // Открытие директ-линка
+        // Direct link opening
         function openSmartlink() {
             if (tg && tg.openLink) { tg.openLink(SMARTLINK_URL); } 
             else { window.open(SMARTLINK_URL, '_blank'); }
@@ -115,7 +114,7 @@
                         <img class="gallery-img" src="">
                         <div class="noise"></div>
                         <div class="overlay">
-                            <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">Открыть (AD)</button>
+                            <button class="unlock-btn" onclick="event.stopPropagation(); handleUnlock('msg${i}')">Unlock (AD)</button>
                         </div>
                     </div>
                     <div class="footer-stats"><span>👁 ${(Math.random() * 11 + 1).toFixed(1)}K</span><span>${time}</span></div>
@@ -152,17 +151,20 @@
             }
         }
 
-        // ОТКРЫТИЕ ОДНОЙ КАРТИНКИ (Rewarded Popup)
+        // Unlock logic updated for instant reward
         function handleUnlock(id) {
+            // 1. Instantly unlock the image so the user doesn't have to wait
+            unlockImage(id);
+
+            // 2. Try to show the ad in the background/popup
             if (typeof show_10629884 === 'function') {
                 show_10629884('pop').then(() => {
-                    unlockImage(id);
+                    console.log("Ad successfully triggered");
                 }).catch(e => {
-                    console.log("Ad skipped or error");
+                    console.log("Ad skipped, blocked, or network error");
                 });
             } else {
                 openSmartlink();
-                unlockImage(id);
             }
         }
 
@@ -190,11 +192,9 @@
         
         function closeFull() { document.getElementById('fullscreen').style.display = 'none'; }
 
-        // Запуск
+        // Initialize
         renderPage(1);
 
     </script>
 </body>
 </html>
-
-
